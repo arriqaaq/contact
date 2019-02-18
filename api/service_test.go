@@ -101,7 +101,7 @@ func (s *ServiceSuite) TestCreateBook() {
 			s.T().Error(err)
 		}
 	}
-	// Assert that there must be one entry with the properties of the bird that we just inserted (since the database was empty before this)
+
 	if count != 1 {
 		s.T().Errorf("incorrect count, wanted 1, got %d", count)
 	}
@@ -127,7 +127,7 @@ func (s *ServiceSuite) TestCreateDuplicateBook() {
 			s.T().Error(err)
 		}
 	}
-	// Assert that there must be one entry with the properties of the bird that we just inserted (since the database was empty before this)
+
 	if count != 1 {
 		s.T().Errorf("incorrect count, wanted 1, got %d", count)
 	}
@@ -230,7 +230,7 @@ func (s *ServiceSuite) TestDeleteBookWithContacts() {
 			s.T().Error(err)
 		}
 	}
-	// Assert that there must be one entry with the properties of the bird that we just inserted (since the database was empty before this)
+
 	if bcount != 0 {
 		s.T().Errorf("incorrect count, wanted 1, got %d", bcount)
 	}
@@ -248,8 +248,179 @@ func (s *ServiceSuite) TestDeleteBookWithContacts() {
 			s.T().Error(err)
 		}
 	}
-	// Assert that there must be one entry with the properties of the bird that we just inserted (since the database was empty before this)
+
 	if count != 0 {
 		s.T().Errorf("incorrect count, wanted 1, got %d", count)
 	}
+}
+
+func (s *ServiceSuite) TestCreateContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	err = s.store.CreateContact("thiago", "alacantara", 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Query the database for the entry we just created
+	res, err := s.db.Query(`SELECT COUNT(*) FROM contacts WHERE name='thiago'`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Get the count result
+	var count int
+	for res.Next() {
+		err := res.Scan(&count)
+		if err != nil {
+			s.T().Error(err)
+		}
+	}
+
+	if count != 1 {
+		s.T().Errorf("incorrect count, wanted 1, got %d", count)
+	}
+}
+
+func (s *ServiceSuite) TestCreateDuplicateContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	err = s.store.CreateContact("thiago", "thiago@bayern.com", 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Query the database for the entry we just created
+	res, err := s.db.Query(`SELECT COUNT(*) FROM contacts WHERE name='thiago'`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Get the count result
+	var count int
+	for res.Next() {
+		err := res.Scan(&count)
+		if err != nil {
+			s.T().Error(err)
+		}
+	}
+	if count != 1 {
+		s.T().Errorf("incorrect count, wanted 1, got %d", count)
+	}
+
+	err = s.store.CreateContact("thiago", "thiago@bayern.com", 1)
+	if err == nil {
+		s.T().Fatal(errors.New("test failed, duplicate record created on unique column"))
+	}
+}
+
+func (s *ServiceSuite) TestGetContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	_, err = s.db.Exec(`INSERT INTO contacts(id,name,email,active,book_id) VALUES(1,'kai','kai@manutd.com',true,1)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	contact, err := s.store.GetContact(1, 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Assert that the details of the book is the same as the one we inserted
+	expectedContact := Contact{Name: "kai", BookID: 1}
+	if contact.Name != expectedContact.Name || contact.BookID != expectedContact.BookID {
+		s.T().Errorf("incorrect details, expected %v, got %v", expectedContact, contact)
+	}
+
+}
+
+func (s *ServiceSuite) TestUpdateContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	_, err = s.db.Exec(`INSERT INTO contacts(id,name,email,active,book_id) VALUES(1,'kai','kai@manutd.com',true,1)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	err = s.store.UpdateContact("cristiano", "cris@manutd.com", 1, 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	contact, err := s.store.GetContact(1, 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// Assert that the details of the book is the same as the one we inserted
+	expectedContact := Contact{Name: "cristiano", BookID: 1, Email: "cris@manutd.com"}
+	if contact.Name != expectedContact.Name || contact.Email != expectedContact.Email {
+		s.T().Errorf("incorrect details, expected %v, got %v", expectedContact, contact)
+	}
+
+}
+
+func (s *ServiceSuite) TestDeleteContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	_, err = s.db.Exec(`INSERT INTO contacts(id,name,email,active,book_id) VALUES(1,'kai','kai@manutd.com',true,1)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	err = s.store.DeleteContact(1, 1)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	_, err = s.store.GetContact(1, 1)
+	if err == nil {
+		s.T().Fatal(err)
+	}
+}
+
+func (s *ServiceSuite) TestSearchContact() {
+	_, err := s.db.Exec(`INSERT INTO books(id,name,active) VALUES(1,'rooney',true)`)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	contactList := []string{"thiago1@bayern.com", "thiago2@bayern.com", "thiago3@bayern.com", "thiago4@bayern.com", "thiago5@bayern.com", "thiago6@bayern.com", "thiago7@bayern.com", "thiago8@bayern.com", "thiago9@bayern.com", "thiago10@bayern.com", "thiago11@bayern.com", "thiago12@bayern.com", "thiago13@bayern.com", "thiago14@bayern.com"}
+
+	for _, v := range contactList {
+		err = s.store.CreateContact("thiago", v, 1)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+	}
+
+	contacts, count, err := s.store.SearchContacts("thiago", "", 0)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	if count != 14 {
+		s.T().Errorf("incorrect count, wanted 14, got %d", count)
+	}
+
+	if len(contacts) != 10 {
+		s.T().Errorf("incorrect count, wanted 10, got %d", count)
+	}
+
 }
