@@ -1,0 +1,39 @@
+version: "2"
+
+services:
+
+  # redis:
+  #   image: redis:alpine
+  #   expose:
+  #     - "6379"
+
+
+  db:
+    restart: 'always'
+    image: postgres:alpine
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER:'postgres'
+      - POSTGRES_PASSWORD:'docker'
+    volumes:
+      - database:/var/lib/postgresql/data
+
+
+  app:
+    image: flash/contact
+    ports:
+      - '8080:8080'
+    working_dir: /home/contact
+    links:
+      # - redis
+      - db
+    environment:
+      REDIS_URL: redis:6379
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: docker
+
+
+
+volumes:
+  database:
