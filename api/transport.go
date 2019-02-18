@@ -349,7 +349,6 @@ func MakeHandler(
 	r.Handle("/v1/book/{book_id}/contact/{contact_id}", getContactHandler).Methods("GET")
 	r.Handle("/v1/book/{book_id}/contact/{contact_id}", updateContactHandler).Methods("PUT")
 	r.Handle("/v1/book/{book_id}/contact/{contact_id}", deleteContactHandler).Methods("DELETE")
-	r.Handle("/v1/book/search", searchBookHandler).Methods("GET") // /search?name="isco"&email="isco@alarcon.com"
 
 	return r
 }
