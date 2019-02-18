@@ -40,8 +40,6 @@ func accessControl(h http.Handler) http.Handler {
 
 func main() {
 	serverURL := fmt.Sprintf("%s:%d", SERVER_HOST, SERVER_PORT)
-	// postgresConnectionStr := "host=db" + " user=" + os.Getenv("POSTGRES_USER") +
-	// 	" dbname=" + os.Getenv("POSTGRES_DB") + " sslmode=disable password=" + os.Getenv("POSTGRES_PASSWORD")
 	postgresConnectionStr := "host=db" + " user=" + os.Getenv("POSTGRES_USER") +
 		" sslmode=disable password=" + os.Getenv("POSTGRES_PASSWORD")
 	fmt.Println("postgres connection string: ", postgresConnectionStr)

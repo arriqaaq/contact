@@ -55,6 +55,8 @@ type Service interface {
 	UpdateContact(name string, email string, bookID uint, contactID uint) error
 	DeleteContact(bookID uint, contactID uint) error
 	SearchContacts(name string, email string, page uint) ([]Contact, uint, error)
+
+	Close() error
 }
 
 func NewService(
@@ -76,7 +78,8 @@ type service struct {
 }
 
 func (s *service) CreateBook(name string) error {
-	return s.storage.Create(&Book{Name: name, Active: true}).Error
+	bi := Book{Name: name, Active: true}
+	return s.storage.Create(&bi).Error
 }
 
 func (s *service) GetBook(id uint) (Book, error) {
@@ -257,4 +260,8 @@ func (s *service) SearchContacts(name string, email string, page uint) ([]Contac
 		s.cache.Set(pCountKey, count, DefaultInternalCacheExpiryTime)
 	}
 	return contacts, count, err
+}
+
+func (s *service) Close() error {
+	return s.storage.Close()
 }
