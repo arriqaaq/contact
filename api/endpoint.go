@@ -107,6 +107,9 @@ type searchContactRequest struct {
 
 type searchContactResponse struct {
 	Results []Contact `json:"results"`
+	Count   uint      `json:"total_count"`
+	Next    string    `json:"next,omitempty"`
+	Prev    string    `json:"prev,omitempty"`
 }
 
 func makeSearchBookEndpoint(svc Service) endpoint.Endpoint {
@@ -114,12 +117,33 @@ func makeSearchBookEndpoint(svc Service) endpoint.Endpoint {
 
 		req := request.(searchContactRequest)
 		resp := searchContactResponse{}
-		fmt.Println("what??????????????")
-		results, err := svc.SearchContacts(req.Name, req.Email, req.Page)
+		results, count, err := svc.SearchContacts(req.Name, req.Email, req.Page)
 		if err != nil {
 			return nil, err
 		}
 		resp.Results = results
+		resp.Count = count
+		offset := (req.Page + 1) * MAX_PAGE_LIMIT
+		if offset < resp.Count {
+			nextURL := fmt.Sprintf("/v1/book/search?page=%d", req.Page+1)
+			if !isEmptyStr(req.Name) {
+				nextURL += "&name=" + req.Name
+			}
+			if !isEmptyStr(req.Email) {
+				nextURL += "&email=" + req.Email
+			}
+			resp.Next = nextURL
+			if req.Page > 0 {
+				prevURL := fmt.Sprintf("/v1/book/search?page=%d", req.Page-1)
+				if !isEmptyStr(req.Name) {
+					prevURL += "&name=" + req.Name
+				}
+				if !isEmptyStr(req.Email) {
+					prevURL += "&email=" + req.Email
+				}
+				resp.Prev = prevURL
+			}
+		}
 		return resp, nil
 	}
 }

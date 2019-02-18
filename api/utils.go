@@ -9,3 +9,10 @@ func StringToUInt(in string) (uint, error) {
 	val, err := strconv.Atoi(in)
 	return uint(val), err
 }
+
+func isEmptyStr(in string) bool {
+	if in == "" {
+		return true
+	}
+	return false
+}

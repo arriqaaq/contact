@@ -117,7 +117,7 @@ func (s *loggingService) DeleteContact(bookID uint, contactID uint) (err error) 
 	return s.Service.DeleteContact(bookID, contactID)
 }
 
-func (s *loggingService) SearchContacts(name string, email string, page uint) (resp []Contact, err error) {
+func (s *loggingService) SearchContacts(name string, email string, page uint) (resp []Contact, count uint, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"service", EVENT_SEARCH_CONTACT,

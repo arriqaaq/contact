@@ -159,7 +159,7 @@ func (s *instrumentingService) DeleteContact(bookID uint, contactID uint) (err e
 	return s.Service.DeleteContact(bookID, contactID)
 }
 
-func (s *instrumentingService) SearchContacts(name string, email string, page uint) (resp []Contact, err error) {
+func (s *instrumentingService) SearchContacts(name string, email string, page uint) (resp []Contact, count uint, err error) {
 
 	defer func(begin time.Time) {
 		lvs := []string{"method", EVENT_SEARCH_CONTACT, "error", "false"}

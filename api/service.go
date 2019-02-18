@@ -2,7 +2,7 @@ package api
 
 import (
 	// x "github.com/arriqaaq/x/convert/strings"
-	"fmt"
+	// "fmt"
 	"github.com/arriqaaq/zizou"
 	"github.com/go-kit/kit/log"
 	"github.com/jinzhu/gorm"
@@ -21,6 +21,8 @@ const (
 	EVENT_UPDATE_CONTACT = "update_contact"
 	EVENT_DELETE_CONTACT = "delete_contact"
 	EVENT_SEARCH_CONTACT = "search_contact"
+
+	MAX_PAGE_LIMIT = 10
 )
 
 var (
@@ -51,7 +53,7 @@ type Service interface {
 	GetContact(bookID uint, contactID uint) (Contact, error)
 	UpdateContact(name string, email string, bookID uint, contactID uint) error
 	DeleteContact(bookID uint, contactID uint) error
-	SearchContacts(name string, email string, page uint) ([]Contact, error)
+	SearchContacts(name string, email string, page uint) ([]Contact, uint, error)
 }
 
 func NewService(
@@ -172,9 +174,17 @@ func (s *service) DeleteContact(bookID uint, contactID uint) error {
 	return s.storage.Model(&contact).Update("active", false).Error
 }
 
-func (s *service) SearchContacts(name string, email string, page uint) ([]Contact, error) {
-	contacts := make([]Contact, 0, 10)
-	offset := page * 10
-	err := s.storage.Offset(offset).Limit(10).Where(&Contact{Name: name, Email: email, Active: true}).Find(&contacts).Error
-	return contacts, err
+func (s *service) SearchContacts(name string, email string, page uint) ([]Contact, uint, error) {
+	var count uint
+	contacts := make([]Contact, 0, MAX_PAGE_LIMIT)
+	offset := page * MAX_PAGE_LIMIT
+
+	si := &Contact{Name: name, Email: email, Active: true}
+
+	err := s.storage.Model(&Contact{}).Where(&si).Count(&count).Error
+	if err != nil {
+		return nil, count, err
+	}
+	err = s.storage.Offset(offset).Limit(MAX_PAGE_LIMIT).Where(&si).Find(&contacts).Error
+	return contacts, count, err
 }
