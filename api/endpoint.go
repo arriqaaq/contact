@@ -112,6 +112,18 @@ type searchContactResponse struct {
 	Prev    string    `json:"prev,omitempty"`
 }
 
+func makeQuery(baseUrl string, name string, email string, page uint) string {
+	url := fmt.Sprintf("/v1/book/search?page=%d", page)
+	if !isEmptyStr(name) {
+		url += "&name=" + name
+	}
+	if !isEmptyStr(email) {
+		url += "&email=" + email
+	}
+	return url
+
+}
+
 func makeSearchBookEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 
@@ -125,23 +137,10 @@ func makeSearchBookEndpoint(svc Service) endpoint.Endpoint {
 		resp.Count = count
 		offset := (req.Page + 1) * MAX_PAGE_LIMIT
 		if offset < resp.Count {
-			nextURL := fmt.Sprintf("/v1/book/search?page=%d", req.Page+1)
-			if !isEmptyStr(req.Name) {
-				nextURL += "&name=" + req.Name
-			}
-			if !isEmptyStr(req.Email) {
-				nextURL += "&email=" + req.Email
-			}
-			resp.Next = nextURL
+			baseQueryURL := "/v1/book/search?page=%d"
+			resp.Next = makeQuery(baseQueryURL, req.Name, req.Email, req.Page+1)
 			if req.Page > 0 {
-				prevURL := fmt.Sprintf("/v1/book/search?page=%d", req.Page-1)
-				if !isEmptyStr(req.Name) {
-					prevURL += "&name=" + req.Name
-				}
-				if !isEmptyStr(req.Email) {
-					prevURL += "&email=" + req.Email
-				}
-				resp.Prev = prevURL
+				resp.Prev = makeQuery(baseQueryURL, req.Name, req.Email, req.Page-1)
 			}
 		}
 		return resp, nil
