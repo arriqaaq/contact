@@ -34,7 +34,4 @@ curl -H 'Authorization: Basic Zmxhc2g6Zmxhc2g=' -XDELETE 0.0.0.0:8080/v1/book/1/
 
 TODO:
 
-Add unit test cases
-
-Create v2 branch with the following:
-Add caching/redis
+Add unit/integration test cases
