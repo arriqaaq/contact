@@ -264,70 +264,71 @@ func MakeHandler(
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorLogger(logger),
 		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerBefore(kithttp.PopulateRequestContext),
 	}
 
 	createBookHandler := kithttp.NewServer(
-		makeCreateBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeCreateBookEndpoint(bs)),
 		decodeCreateBookRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	getBookHandler := kithttp.NewServer(
-		makeGetBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeGetBookEndpoint(bs)),
 		decodeGetBookRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	getAllBooksHandler := kithttp.NewServer(
-		makeGetAllBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeGetAllBookEndpoint(bs)),
 		decodeAllBooksRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	updateBookHandler := kithttp.NewServer(
-		makeUpdateBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeUpdateBookEndpoint(bs)),
 		decodeUpdateBookRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	deleteBookHandler := kithttp.NewServer(
-		makeDeleteBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeDeleteBookEndpoint(bs)),
 		decodeDeleteBookRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	searchBookHandler := kithttp.NewServer(
-		makeSearchBookEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeSearchBookEndpoint(bs)),
 		decodeSearchContactRequest,
 		encodeResponse,
 		opts...,
 	)
 
 	createContactHandler := kithttp.NewServer(
-		makeCreateContactEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeCreateContactEndpoint(bs)),
 		decodeCreateContactRequest,
 		encodeResponse,
 		opts...,
 	)
 	getContactHandler := kithttp.NewServer(
-		makeGetContactEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeGetContactEndpoint(bs)),
 		decodeGetContactRequest,
 		encodeResponse,
 		opts...,
 	)
 	updateContactHandler := kithttp.NewServer(
-		makeUpdateContactEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeUpdateContactEndpoint(bs)),
 		decodeUpdateContactRequest,
 		encodeResponse,
 		opts...,
 	)
 	deleteContactHandler := kithttp.NewServer(
-		makeDeleteContactEndpoint(bs),
+		AuthMiddleware("flash", "flash", "flash")(makeDeleteContactEndpoint(bs)),
 		decodeDeleteContactRequest,
 		encodeResponse,
 		opts...,
