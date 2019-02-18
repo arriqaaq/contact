@@ -1,5 +1,12 @@
-Create curl calls in this README file
+Features:
+	Caching is introduced to satisfy the following requirements,
+	"The code should scale out for millions of contacts per contact book"
+	We will implement a cache of 1 minute for all the GET API records
 
+
+
+
+CURL:
 
 Create Book
 curl -XPOST 0.0.0.0:8080/v1/book -d '{"name":"alibaba"}'
@@ -32,9 +39,3 @@ Delete Contact
 curl -XDELETE 0.0.0.0:8080/v1/book/1/contact/1
 
 
-TODO:
-
-Add unit test cases
-
-Create v2 branch with the following:
-Add caching/redis
