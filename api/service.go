@@ -2,7 +2,7 @@ package api
 
 import (
 	// x "github.com/arriqaaq/x/convert/strings"
-	// "fmt"
+	"fmt"
 	"github.com/arriqaaq/zizou"
 	"github.com/go-kit/kit/log"
 	"github.com/jinzhu/gorm"
@@ -28,11 +28,13 @@ const (
 var (
 	DateFormat                       = "2006-01-02"
 	DefaultInternalCacheEvictionTime = 5 * time.Minute
-	DefaultInternalCacheExpiryTime   = 10 * time.Minute
+	DefaultInternalCacheExpiryTime   = 10 * time.Second
 
-	CACHE_BOOK_KEY     = "book:%d"
-	CACHE_ALL_BOOK_KEY = "book:all"
-	CACHE_CONTACT_KEY  = "book:%d:contact:%s"
+	CACHE_BOOK_KEY         = "book:%d"
+	CACHE_ALL_BOOK_KEY     = "book:all"
+	CACHE_CONTACT_KEY      = "book:%d:contact:%s"
+	CACHE_SEARCH_KEY       = "search:name:%s:email:%s:page:%d"
+	CACHE_SEARCH_COUNT_KEY = "search:name:%s:email:%s:page:%d:count"
 )
 
 type EcpmItem struct {
@@ -84,28 +86,56 @@ func (s *service) CreateBook(name string) error {
 }
 
 func (s *service) GetBook(id uint) (Book, error) {
+	pKey := fmt.Sprintf(CACHE_BOOK_KEY, id)
+
+	// l1 cache
+	val, found := s.cache.Get(pKey)
+	if found {
+		return val.(Book), nil
+	}
 
 	book := Book{}
 	si := &Book{ID: id, Active: true}
 	err := s.storage.Preload("Contacts").Where(&si).First(&book).Error
+	if err == nil {
+		s.cache.Set(pKey, book, DefaultInternalCacheExpiryTime)
+	}
 	return book, err
 }
 
 func (s *service) GetAllBooks() ([]Book, error) {
+	pKey := CACHE_ALL_BOOK_KEY
+
+	// l1 cache
+	val, found := s.cache.Get(pKey)
+	if found {
+		return val.([]Book), nil
+	}
 
 	books := make([]Book, 0, 10)
 	err := s.storage.Preload("Contacts").Where(&Book{Active: true}).Find(&books).Error
+	if err == nil {
+		s.cache.Set(pKey, books, DefaultInternalCacheExpiryTime)
+	}
 	return books, err
 }
 
 func (s *service) UpdateBook(name string, id uint) error {
+
 	book := Book{}
 	err := s.storage.Where(&Book{ID: id, Active: true}).First(&book).Error
 	if err != nil {
 		return ERR_INVALID_ID
 	}
 	if name != "" {
-		return s.storage.Model(&book).Updates(map[string]interface{}{"name": name}).Error
+		err := s.storage.Model(&book).Updates(map[string]interface{}{"name": name}).Error
+		if err == nil {
+			pKey := fmt.Sprintf(CACHE_BOOK_KEY, id)
+			book.Name = name
+			s.cache.Set(pKey, book, DefaultInternalCacheExpiryTime)
+		}
+		return err
+
 	}
 	return nil
 }
@@ -139,29 +169,57 @@ func (s *service) CreateContact(name string, email string, bookID uint) error {
 }
 
 func (s *service) GetContact(bookID uint, contactID uint) (Contact, error) {
+	pKey := fmt.Sprintf(CACHE_CONTACT_KEY, bookID, contactID)
+
+	// l1 cache
+	val, found := s.cache.Get(pKey)
+	if found {
+		return val.(Contact), nil
+	}
+
 	contact := Contact{}
 	si := &Contact{BookID: bookID, ID: contactID, Active: true}
 	err := s.storage.Where(si).First(&contact).Error
+	if err == nil {
+		s.cache.Set(pKey, contact, DefaultInternalCacheExpiryTime)
+	}
 	return contact, err
 
 }
 
 func (s *service) UpdateContact(name string, email string, bookID uint, contactID uint) error {
+
+	var err error
+	pKey := fmt.Sprintf(CACHE_CONTACT_KEY, bookID, contactID)
+
 	contact := Contact{}
 	si := &Contact{BookID: bookID, ID: contactID, Active: true}
-	err := s.storage.Where(si).First(&contact).Error
+	err = s.storage.Where(si).First(&contact).Error
 	if err != nil {
 		return ERR_INVALID_ID
 	}
 	if name != "" && email != "" {
-		return s.storage.Model(&contact).Updates(map[string]interface{}{"name": name, "email": email}).Error
+		err = s.storage.Model(&contact).Updates(map[string]interface{}{"name": name, "email": email}).Error
+		if err == nil {
+			contact.Name = name
+			contact.Email = email
+			s.cache.Set(pKey, contact, DefaultInternalCacheExpiryTime)
+		}
 	} else if name != "" && email == "" {
-		return s.storage.Model(&contact).Update("name", name).Error
+		err = s.storage.Model(&contact).Update("name", name).Error
+		if err == nil {
+			contact.Name = name
+			s.cache.Set(pKey, contact, DefaultInternalCacheExpiryTime)
+		}
 	} else if name == "" && email != "" {
-		return s.storage.Model(&contact).Update("email", email).Error
+		err = s.storage.Model(&contact).Update("email", email).Error
+		if err == nil {
+			contact.Email = email
+			s.cache.Set(pKey, contact, DefaultInternalCacheExpiryTime)
+		}
 	}
 
-	return nil
+	return err
 }
 
 func (s *service) DeleteContact(bookID uint, contactID uint) error {
@@ -175,6 +233,18 @@ func (s *service) DeleteContact(bookID uint, contactID uint) error {
 }
 
 func (s *service) SearchContacts(name string, email string, page uint) ([]Contact, uint, error) {
+	pKey := fmt.Sprintf(CACHE_SEARCH_KEY, name, email, page)
+	pCountKey := fmt.Sprintf(CACHE_SEARCH_COUNT_KEY, name, email, page)
+
+	// l1 cache
+	val, found := s.cache.Get(pKey)
+	if found {
+		cnt, cntFound := s.cache.Get(pCountKey)
+		if cntFound {
+			return val.([]Contact), cnt.(uint), nil
+		}
+	}
+
 	var count uint
 	contacts := make([]Contact, 0, MAX_PAGE_LIMIT)
 	offset := page * MAX_PAGE_LIMIT
@@ -188,5 +258,9 @@ func (s *service) SearchContacts(name string, email string, page uint) ([]Contac
 		return nil, count, ERR_INVALID_PAGE
 	}
 	err = s.storage.Offset(offset).Limit(MAX_PAGE_LIMIT).Where(&si).Find(&contacts).Error
+	if err == nil {
+		s.cache.Set(pKey, contacts, DefaultInternalCacheExpiryTime)
+		s.cache.Set(pCountKey, count, DefaultInternalCacheExpiryTime)
+	}
 	return contacts, count, err
 }
