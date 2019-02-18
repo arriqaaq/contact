@@ -180,10 +180,12 @@ func (s *service) SearchContacts(name string, email string, page uint) ([]Contac
 	offset := page * MAX_PAGE_LIMIT
 
 	si := &Contact{Name: name, Email: email, Active: true}
-
 	err := s.storage.Model(&Contact{}).Where(&si).Count(&count).Error
 	if err != nil {
 		return nil, count, err
+	}
+	if offset > count {
+		return nil, count, ERR_INVALID_PAGE
 	}
 	err = s.storage.Offset(offset).Limit(MAX_PAGE_LIMIT).Where(&si).Find(&contacts).Error
 	return contacts, count, err
