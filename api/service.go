@@ -3,7 +3,6 @@ package api
 import (
 	// x "github.com/arriqaaq/x/convert/strings"
 	"fmt"
-	"github.com/arriqaaq/zizou"
 	"github.com/go-kit/kit/log"
 	"github.com/jinzhu/gorm"
 	"time"
@@ -63,22 +62,17 @@ func NewService(
 	logger log.Logger,
 ) Service {
 
-	zizouCnf := &zizou.Config{
-		SweepTime: DefaultInternalCacheEvictionTime,
-		ShardSize: 256,
-	}
-	l1cache, _ := zizou.New(zizouCnf)
 	return &service{
 		storage: storage,
 		logger:  logger,
-		cache:   l1cache,
+		cache:   NewL1Cache(),
 	}
 }
 
 type service struct {
 	logger  log.Logger
 	storage *gorm.DB
-	cache   *zizou.Cache
+	cache   Cache
 }
 
 func (s *service) CreateBook(name string) error {
