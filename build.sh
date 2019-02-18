@@ -13,5 +13,3 @@ DOCKERFILE_APP="Dockerfile"
 
 echo Building app image: $APP_IMG
 docker build -t $APP_IMG . -f $DOCKERFILE_APP
-
-docker-compose up
