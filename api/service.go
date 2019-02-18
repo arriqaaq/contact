@@ -158,6 +158,8 @@ func (s *service) DeleteBook(id uint) error {
 		tx.Rollback()
 		return err
 	}
+	pKey := fmt.Sprintf(CACHE_BOOK_KEY, id)
+	s.cache.Delete(pKey)
 	return tx.Commit().Error
 }
 
@@ -226,7 +228,12 @@ func (s *service) DeleteContact(bookID uint, contactID uint) error {
 	if err != nil {
 		return ERR_INVALID_ID
 	}
-	return s.storage.Model(&contact).Update("active", false).Error
+	err = s.storage.Model(&contact).Update("active", false).Error
+	if err != nil {
+		pKey := fmt.Sprintf(CACHE_CONTACT_KEY, bookID, contactID)
+		s.cache.Delete(pKey)
+	}
+	return err
 }
 
 func (s *service) SearchContacts(name string, email string, page uint) ([]Contact, uint, error) {

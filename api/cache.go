@@ -10,6 +10,7 @@ import (
 type Cache interface {
 	Get(string) (interface{}, bool)
 	Set(string, interface{}, time.Duration) error
+	Delete(string) bool
 }
 
 func NewL1Cache() Cache {
@@ -60,4 +61,12 @@ func (r *redisDb) Get(key string) (interface{}, bool) {
 
 func (r *redisDb) Set(key string, value interface{}, duration time.Duration) error {
 	return r.conn.Set(key, value, duration).Err()
+}
+
+func (r *redisDb) Delete(key string) bool {
+	err := r.conn.Del(key).Err()
+	if err != nil {
+		return false
+	}
+	return true
 }
