@@ -7,11 +7,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-const (
-	EVENT_GET_ECPM = "getEcpm"
-	EVENT_SET_ECPM = "setEcpm"
-)
-
 type createBookRequest struct {
 	Name string `json:"name" valid:"required"`
 }
