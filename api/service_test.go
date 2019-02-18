@@ -2,12 +2,15 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/stretchr/testify/suite"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -423,4 +426,82 @@ func (s *ServiceSuite) TestSearchContact() {
 		s.T().Errorf("incorrect count, wanted 10, got %d", count)
 	}
 
+}
+
+/*
+	Handler tests
+*/
+
+func TestGetAllBooksHandler(t *testing.T) {
+
+	mockStore := NewMockService()
+
+	mockStore.On("GetAllBooks").Return([]Book{{ID: 1}}, nil).Once()
+
+	hf := MakeHandler(mockStore, kitlog.NewNopLogger())
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/v1/book", nil)
+	req.Header.Set("Authorization", "Basic Zmxhc2g6Zmxhc2g=")
+
+	hf.ServeHTTP(recorder, req)
+
+	if status := recorder.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := Book{ID: 1}
+	b := getAllBooksResponse{}
+	err := json.NewDecoder(recorder.Body).Decode(&b)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := b.Result[0]
+
+	if actual.ID != expected.ID {
+		t.Errorf("handler returned unexpected body: got %v want %v", actual, expected)
+	}
+
+	// the expectations that we defined in the `On` method are asserted here
+	mockStore.AssertExpectations(t)
+}
+
+func TestGetBookHandler(t *testing.T) {
+
+	mockStore := NewMockService()
+
+	mockStore.On("GetBook", uint(1)).Return(Book{ID: 1}, nil).Once()
+
+	hf := MakeHandler(mockStore, kitlog.NewNopLogger())
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/v1/book/1", nil)
+	req.Header.Set("Authorization", "Basic Zmxhc2g6Zmxhc2g=")
+
+	hf.ServeHTTP(recorder, req)
+
+	if status := recorder.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	expected := Book{ID: 1}
+	b := getBookResponse{}
+	err := json.NewDecoder(recorder.Body).Decode(&b)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := b.Result
+
+	if actual.ID != expected.ID {
+		t.Errorf("handler returned unexpected body: got %v want %v", actual, expected)
+	}
+
+	// the expectations that we defined in the `On` method are asserted here
+	mockStore.AssertExpectations(t)
 }
