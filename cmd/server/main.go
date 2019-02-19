@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bitbucket.org/greedygame/contact/api"
 	"fmt"
+	"github.com/arriqaaq/contact/api"
 	lucio "github.com/arriqaaq/server"
 	"github.com/arriqaaq/x"
 	kitlog "github.com/go-kit/kit/log"
